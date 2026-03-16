@@ -12,9 +12,12 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
 
     @Override
     @EntityGraph(attributePaths = {"addresses"})
+    // @Query("select distinct e from Employee e left join fetch e.addresses")
     List<Employee> findAll();
 
     @Override
     @EntityGraph(attributePaths = {"addresses"})
+    // @Query("select e from Employee e left join fetch e.addresses where e.id = :id")
+    // Optional<Employee> findById(@Param("id") Long id);
     Optional<Employee> findById(Long id);
 }
