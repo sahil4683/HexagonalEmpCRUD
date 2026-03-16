@@ -1,39 +1,161 @@
 # Hexagonal Emp CRUD
 
-This app was created with Bootify.io - tips on working with the code [can be found here](https://bootify.io/next-steps/).
+A simple Java Spring Boot CRUD application using hexagonal (ports & adapters) architecture.
 
-## Development
+---
 
-Update your local database connection in `application.properties` or create your own `application-local.properties` file to override settings for development.
+## 📝 Overview
+- **Language:** Java 17
+- **Framework:** Spring Boot
+- **Persistence:** Spring Data JPA, H2 (in-memory)
+- **API Docs:** OpenAPI/Swagger UI (springdoc)
 
-During development it is recommended to use the profile `local`. In IntelliJ `-Dspring.profiles.active=local` can be added in the VM options of the Run Configuration after enabling this property in "Modify options".
+---
 
-Lombok must be supported by your IDE. For IntelliJ install the Lombok plugin and enable annotation processing - [learn more](https://bootify.io/next-steps/spring-boot-with-lombok.html).
+## ✨ Features
+- Clean separation: REST API, domain logic, persistence
+- Employee ↔ Address: One-to-many relationship
+- Sample data auto-loaded on startup
+- OpenAPI UI for easy API testing
 
-After starting the application it is accessible under `localhost:8080`.
+---
 
-## Build
-
-The application can be built using the following command:
-
-```
-mvnw clean package
-```
-
-Start your application with the following command - here with the profile `production`:
-
-```
-java -Dspring.profiles.active=production -jar ./target/HexagonalEmpCRUD-0.0.1-SNAPSHOT.jar
-```
-
-If required, a Docker image can be created with the Spring Boot plugin. Add `SPRING_PROFILES_ACTIVE=production` as environment variable when running the container.
+## 📁 Project Structure
 
 ```
-mvnw spring-boot:build-image -Dspring-boot.build-image.imageName=io.sp/hexagonal-emp-c-r-u-d
+io.sp.hexagonal_emp_c_r_u_d
+├── HexagonalEmpCRUDApplication.java         # Main entry
+├── config/
+│   ├── DomainConfig.java
+│   └── JacksonConfig.java
+├── domain/
+│   ├── model/
+│   │   ├── EmployeeDto.java
+│   │   └── AddressDto.java
+│   ├── port/
+│   │   └── in/EmployeeUseCase.java
+│   └── service/EmployeeService.java
+├── infrastructure/
+│   ├── adapter/
+│   │   ├── in/rest/EmployeeResource.java    # REST controller
+│   │   └── out/persistence/
+│   │       ├── adapter/EmployeePersistenceAdapter.java
+│   │       ├── entity/Employee.java, Address.java
+│   │       └── repository/EmployeeRepository.java, AddressRepository.java
+│   └── configuration/
+│       ├── BeanConfiguration.java
+│       └── DataInitializer.java             # Loads sample data
 ```
 
-## Further readings
+---
 
-* [Maven docs](https://maven.apache.org/guides/index.html)  
-* [Spring Boot reference](https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle/)  
-* [Spring Data JPA reference](https://docs.spring.io/spring-data/jpa/reference/jpa.html)
+## 🔄 Data Flow (REST → Domain → Persistence)
+
+```
+Client (HTTP Request)
+    │
+    ▼
+EmployeeResource
+[Class - REST Controller]
+Receives HTTP requests and returns responses
+Uses DTOs for communication
+
+    │
+    │ calls
+    ▼
+EmployeeUseCase
+[Interface - Input Port]
+Defines the operations available for employee management
+
+    │
+    │ implemented by
+    ▼
+EmployeeService
+[Class - Domain Service]
+Contains the business logic for employee operations
+
+    │
+    │ delegates persistence work to
+    ▼
+EmployeePersistenceAdapter
+[Class - Persistence Adapter]
+Handles conversion between DTOs and Entities
+
+    │
+    │ uses
+    ▼
+EmployeeRepository
+[Interface - Spring Data JPA Repository]
+Performs database operations
+
+    │
+    │ works with
+    ▼
+Employee / Address
+[Entities - JPA Entities]
+
+    │
+    ▼
+H2 Database
+[In-Memory Database]
+```
+
+---
+
+## 🏁 How to Run
+
+1. **Start app:**
+   ```
+   mvn spring-boot:run
+   ```
+2. **Open Swagger UI:**
+   - [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)
+
+---
+
+## 🗃 Sample Data
+- Defined in `DataInitializer.java` (runs at startup if DB is empty)
+- Example:
+  ```json
+  [
+    {
+      "name": "Sahil",
+      "contactNumber": "32532",
+      "addresses": [
+        { "city": "Mumbai", "country": "IND" },
+        { "city": "Pune", "country": "IND" }
+      ]
+    },
+    // ...more employees
+  ]
+  ```
+
+---
+
+## 🛠 Troubleshooting
+
+### LazyInitializationException
+- **Cause:** Accessing a lazy-loaded collection after the JPA session is closed.
+- **Solution in this project:**
+  - `EmployeeRepository` fetches addresses using `JOIN FETCH`
+  - `EmployeePersistenceAdapter` converts entities → DTOs inside the transaction
+  - Controllers work only with DTOs
+
+---
+
+## 🎯 Benefits
+- Clear separation of concerns
+- Domain logic independent from frameworks
+- Easier unit testing
+- Flexible replacement of external systems
+- Clean DTO ↔ Entity mapping
+
+---
+
+## 🚀 Extending This Project
+- Add more APIs (update, delete, search, etc.)
+- Add validation, error handling, authentication
+- Use a persistent DB (e.g., PostgreSQL)
+- Add integration tests
+
+---
