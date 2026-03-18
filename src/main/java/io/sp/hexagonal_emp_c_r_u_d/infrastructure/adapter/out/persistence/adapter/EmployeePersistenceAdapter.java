@@ -4,22 +4,27 @@ import io.sp.hexagonal_emp_c_r_u_d.domain.model.AddressDto;
 import io.sp.hexagonal_emp_c_r_u_d.domain.model.EmployeeDto;
 import io.sp.hexagonal_emp_c_r_u_d.domain.port.out.EmployeeRepositoryPort;
 import io.sp.hexagonal_emp_c_r_u_d.infrastructure.adapter.out.persistence.entity.Address;
+import io.sp.hexagonal_emp_c_r_u_d.infrastructure.adapter.out.persistence.entity.Department;
 import io.sp.hexagonal_emp_c_r_u_d.infrastructure.adapter.out.persistence.entity.Employee;
 import io.sp.hexagonal_emp_c_r_u_d.infrastructure.adapter.out.persistence.repository.EmployeeRepository;
+import io.sp.hexagonal_emp_c_r_u_d.infrastructure.adapter.out.persistence.repository.DepartmentRepository;
 import org.springframework.stereotype.Component;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 @Component
 public class EmployeePersistenceAdapter implements EmployeeRepositoryPort {
 
     private final EmployeeRepository employeeRepository;
+    private final DepartmentRepository departmentRepository;
 
-    public EmployeePersistenceAdapter(EmployeeRepository employeeRepository) {
+    public EmployeePersistenceAdapter(EmployeeRepository employeeRepository, DepartmentRepository departmentRepository) {
         this.employeeRepository = employeeRepository;
+        this.departmentRepository = departmentRepository;
     }
 
     @Override
@@ -47,31 +52,34 @@ public class EmployeePersistenceAdapter implements EmployeeRepositoryPort {
 
     @Override
     public void update(Long id, EmployeeDto employeeDTO) {
-        Optional<Employee> existing = employeeRepository.findById(id);
-        if (existing.isPresent()) {
-            Employee entity = existing.get();
-            entity.setName(employeeDTO.getName());
-            entity.setContactNumber(employeeDTO.getContactNumber());
+        Employee entity = employeeRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResponseStatusException(HttpStatus.NOT_FOUND, "Employee not found: " + id));
+        entity.setName(employeeDTO.getName());
+        entity.setContactNumber(employeeDTO.getContactNumber());
 
-            // sync addresses: simple strategy - clear and replace
-            entity.getAddresses().clear();
-            if (employeeDTO.getAddresses() != null) {
-                for (AddressDto adto : employeeDTO.getAddresses()) {
-                    Address addr = new Address();
-                    addr.setId(adto.getId());
-                    addr.setCity(adto.getCity());
-                    addr.setCountry(adto.getCountry());
-                    addr.setEmployee(entity);
-                    entity.getAddresses().add(addr);
-                }
+        // sync addresses: simple strategy - clear and replace
+        entity.getAddresses().clear();
+        if (employeeDTO.getAddresses() != null) {
+            for (AddressDto adto : employeeDTO.getAddresses()) {
+                Address addr = new Address();
+                addr.setId(adto.getId());
+                addr.setCity(adto.getCity());
+                addr.setCountry(adto.getCountry());
+                addr.setEmployee(entity);
+                entity.getAddresses().add(addr);
             }
-
-            employeeRepository.save(entity);
         }
+
+        entity.setDepartment(resolveDepartment(employeeDTO.getDepartmentId()));
+        employeeRepository.save(entity);
     }
 
     @Override
     public void delete(Long id) {
+        if (!employeeRepository.existsById(id)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Employee not found: " + id);
+        }
         employeeRepository.deleteById(id);
     }
 
@@ -89,6 +97,9 @@ public class EmployeePersistenceAdapter implements EmployeeRepositoryPort {
                 return adto;
             }).collect(Collectors.toList());
             dto.setAddresses(ads);
+        }
+        if (e.getDepartment() != null) {
+            dto.setDepartmentId(e.getDepartment().getId());
         }
         return dto;
     }
@@ -111,6 +122,19 @@ public class EmployeePersistenceAdapter implements EmployeeRepositoryPort {
             }
         }
         e.setAddresses(addresses);
+
+        e.setDepartment(resolveDepartment(dto.getDepartmentId()));
+
         return e;
+    }
+
+    private Department resolveDepartment(Long departmentId) {
+        if (departmentId == null) {
+            return null;
+        }
+        return departmentRepository.findById(departmentId)
+                .orElseThrow(() ->
+                        new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                                "Invalid departmentId: " + departmentId));
     }
 }

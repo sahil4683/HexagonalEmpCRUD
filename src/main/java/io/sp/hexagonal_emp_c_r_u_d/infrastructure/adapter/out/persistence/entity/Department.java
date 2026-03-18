@@ -7,11 +7,10 @@ import lombok.Setter;
 import java.util.ArrayList;
 import java.util.List;
 
-
 @Entity
 @Getter
 @Setter
-public class Employee {
+public class Department {
 
     @Id
     @Column(nullable = false, updatable = false)
@@ -21,15 +20,8 @@ public class Employee {
     @Column
     private String name;
 
-    @Column
-    private String contactNumber;
-
-    @OneToMany(mappedBy = "employee", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Address> addresses = new ArrayList<>();
-
-    // relationship to department
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "department_id")
-    private Department department;
+    // bidirectional mapping to employees
+    @OneToMany(mappedBy = "department", fetch = FetchType.LAZY)
+    private List<Employee> employees = new ArrayList<>();
 
 }

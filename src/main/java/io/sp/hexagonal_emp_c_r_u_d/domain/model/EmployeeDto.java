@@ -25,4 +25,7 @@ public class EmployeeDto {
 
     List<AddressDto> addresses = new ArrayList<>();
 
+    // added department reference (by id)
+    private Long departmentId;
+
 }

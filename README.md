@@ -1,161 +1,265 @@
-# Hexagonal Emp CRUD
+# HexagonalEmpCRUD
 
-A simple Java Spring Boot CRUD application using hexagonal (ports & adapters) architecture.
+Spring Boot CRUD application for managing employees, departments, and employee addresses using a hexagonal architecture.
 
----
+## Overview
 
-## 📝 Overview
-- **Language:** Java 17
-- **Framework:** Spring Boot
-- **Persistence:** Spring Data JPA, H2 (in-memory)
-- **API Docs:** OpenAPI/Swagger UI (springdoc)
+This project demonstrates how to organize a small REST API around:
 
----
+- domain use cases and services
+- input ports and output ports
+- REST controllers as inbound adapters
+- JPA persistence as an outbound adapter
 
-## ✨ Features
-- Clean separation: REST API, domain logic, persistence
-- Employee ↔ Address: One-to-many relationship
-- Sample data auto-loaded on startup
-- OpenAPI UI for easy API testing
+The app starts with an in-memory H2 database and seeds a small dataset automatically when no employees exist yet.
 
----
+## Tech Stack
 
-## 📁 Project Structure
+- Java 17
+- Spring Boot 4.0.3
+- Spring Web
+- Spring Data JPA
+- H2 database
+- Jakarta Validation
+- Springdoc OpenAPI / Swagger UI
+- Lombok
+- `error-handling-spring-boot-starter`
 
-```
-io.sp.hexagonal_emp_c_r_u_d
-├── HexagonalEmpCRUDApplication.java         # Main entry
-├── config/
-│   ├── DomainConfig.java
-│   └── JacksonConfig.java
-├── domain/
-│   ├── model/
-│   │   ├── EmployeeDto.java
-│   │   └── AddressDto.java
-│   ├── port/
-│   │   └── in/EmployeeUseCase.java
-│   └── service/EmployeeService.java
-├── infrastructure/
-│   ├── adapter/
-│   │   ├── in/rest/EmployeeResource.java    # REST controller
-│   │   └── out/persistence/
-│   │       ├── adapter/EmployeePersistenceAdapter.java
-│   │       ├── entity/Employee.java, Address.java
-│   │       └── repository/EmployeeRepository.java, AddressRepository.java
-│   └── configuration/
-│       ├── BeanConfiguration.java
-│       └── DataInitializer.java             # Loads sample data
-```
+## Architecture
 
----
+The codebase follows a ports-and-adapters structure:
 
-## 🔄 Data Flow (REST → Domain → Persistence)
-
-```
-Client (HTTP Request)
-    │
-    ▼
-EmployeeResource
-[Class - REST Controller]
-Receives HTTP requests and returns responses
-Uses DTOs for communication
-
-    │
-    │ calls
-    ▼
-EmployeeUseCase
-[Interface - Input Port]
-Defines the operations available for employee management
-
-    │
-    │ implemented by
-    ▼
-EmployeeService
-[Class - Domain Service]
-Contains the business logic for employee operations
-
-    │
-    │ delegates persistence work to
-    ▼
-EmployeePersistenceAdapter
-[Class - Persistence Adapter]
-Handles conversion between DTOs and Entities
-
-    │
-    │ uses
-    ▼
-EmployeeRepository
-[Interface - Spring Data JPA Repository]
-Performs database operations
-
-    │
-    │ works with
-    ▼
-Employee / Address
-[Entities - JPA Entities]
-
-    │
-    ▼
-H2 Database
-[In-Memory Database]
+```text
+src/main/java/io/sp/hexagonal_emp_c_r_u_d
+|-- config
+|   |-- DomainConfig.java
+|   `-- JacksonConfig.java
+|-- domain
+|   |-- model
+|   |   |-- AddressDto.java
+|   |   |-- DepartmentDto.java
+|   |   `-- EmployeeDto.java
+|   |-- port
+|   |   |-- in
+|   |   |   |-- DepartmentUseCase.java
+|   |   |   `-- EmployeeUseCase.java
+|   |   `-- out
+|   |       |-- DepartmentRepositoryPort.java
+|   |       `-- EmployeeRepositoryPort.java
+|   `-- service
+|       |-- DepartmentService.java
+|       `-- EmployeeService.java
+`-- infrastructure
+    |-- adapter
+    |   |-- in/rest
+    |   |   |-- DepartmentController.java
+    |   |   `-- EmployeeResource.java
+    |   `-- out/persistence
+    |       |-- adapter
+    |       |   |-- DepartmentPersistenceAdapter.java
+    |       |   `-- EmployeePersistenceAdapter.java
+    |       |-- entity
+    |       |   |-- Address.java
+    |       |   |-- Department.java
+    |       |   `-- Employee.java
+    |       `-- repository
+    |           |-- AddressRepository.java
+    |           |-- DepartmentRepository.java
+    |           `-- EmployeeRepository.java
+    `-- configuration
+        |-- BeanConfiguration.java
+        `-- DataInitializer.java
 ```
 
----
+### Request Flow
 
-## 🏁 How to Run
+```text
+HTTP Request
+  -> REST Controller
+  -> Use Case (input port)
+  -> Domain Service
+  -> Repository Port (output port)
+  -> Persistence Adapter
+  -> Spring Data JPA Repository
+  -> H2 Database
+```
 
-1. **Start app:**
-   ```
-   mvn spring-boot:run
-   ```
-2. **Open Swagger UI:**
-   - [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)
+## Domain Model
 
----
+### Employee
 
-## 🗃 Sample Data
-- Defined in `DataInitializer.java` (runs at startup if DB is empty)
-- Example:
-  ```json
-  [
+- `id: Long`
+- `name: String` required, max 255 chars
+- `contactNumber: String` optional, max 255 chars
+- `departmentId: Long` optional
+- `addresses: List<AddressDto>`
+
+### Address
+
+- `id: Long`
+- `city: String` optional, max 255 chars
+- `country: String` optional, max 255 chars
+
+### Department
+
+- `id: Long`
+- `name: String` required, max 255 chars
+
+## Available APIs
+
+### Employee endpoints
+
+- `GET /api/employees`
+- `GET /api/employees/{id}`
+- `POST /api/employees`
+- `PUT /api/employees/{id}`
+- `DELETE /api/employees/{id}`
+
+### Department endpoints
+
+- `GET /api/departments`
+- `GET /api/departments/{id}`
+- `POST /api/departments`
+- `PUT /api/departments/{id}`
+- `DELETE /api/departments/{id}`
+- `GET /api/departments/{id}/employees`
+
+Detailed examples are in [docs/API.md](/C:/Users/sahil/Downloads/HexagonalEmpCRUD/HexagonalEmpCRUD/docs/API.md).
+
+## Running the Application
+
+### Prerequisites
+
+- Java 17+
+- Maven 3.9+ or the included Maven wrapper
+
+### Start locally
+
+```bash
+./mvnw spring-boot:run
+```
+
+On Windows PowerShell:
+
+```powershell
+.\mvnw.cmd spring-boot:run
+```
+
+The app starts on `http://localhost:8080`.
+
+## Swagger UI
+
+Open:
+
+- [Swagger UI](http://localhost:8080/swagger-ui/index.html)
+
+Springdoc is configured to expose only endpoints under `/api/**`.
+
+## Database Configuration
+
+The default datasource is H2 in-memory:
+
+```properties
+spring.datasource.url=jdbc:h2:mem:HexagonalEmpCRUD
+spring.datasource.username=sa
+spring.datasource.password=
+```
+
+You can override the datasource through environment variables:
+
+- `JDBC_DATABASE_URL`
+- `JDBC_DATABASE_USERNAME`
+- `JDBC_DATABASE_PASSWORD`
+
+Other relevant persistence settings:
+
+- `spring.jpa.hibernate.ddl-auto=update`
+- `spring.jpa.open-in-view=false`
+- `spring.jpa.show-sql=true`
+
+## Seed Data
+
+At startup, `DataInitializer` inserts sample departments and employees when the employee table is empty.
+
+### Seed departments
+
+- Engineering
+- HR
+
+### Seed employees
+
+- Sahil -> Engineering
+- Rohan -> Engineering
+- Amit -> HR
+- Neha -> HR
+- Priya -> no department
+
+Each employee is also seeded with two addresses.
+
+## Example Payloads
+
+### Create a department
+
+```json
+{
+  "name": "Finance"
+}
+```
+
+### Create an employee
+
+```json
+{
+  "name": "Anita",
+  "contactNumber": "9988001122",
+  "departmentId": 1,
+  "addresses": [
     {
-      "name": "Sahil",
-      "contactNumber": "32532",
-      "addresses": [
-        { "city": "Mumbai", "country": "IND" },
-        { "city": "Pune", "country": "IND" }
-      ]
+      "id": null,
+      "city": "Pune",
+      "country": "IND"
     },
-    // ...more employees
+    {
+      "id": null,
+      "city": "Nashik",
+      "country": "IND"
+    }
   ]
-  ```
+}
+```
 
----
+## Validation and Error Handling
 
-## 🛠 Troubleshooting
+- `EmployeeDto.name` is required
+- `DepartmentDto.name` is required
+- max length for textual fields is 255 characters
+- request validation is enabled through `@Valid`
+- JSON error responses are enabled through `error-handling-spring-boot-starter`
+- missing employees and departments now return `404 Not Found`
+- invalid `departmentId` in employee create/update returns `400 Bad Request`
+- deleting a department with assigned employees returns `409 Conflict`
 
-### LazyInitializationException
-- **Cause:** Accessing a lazy-loaded collection after the JPA session is closed.
-- **Solution in this project:**
-  - `EmployeeRepository` fetches addresses using `JOIN FETCH`
-  - `EmployeePersistenceAdapter` converts entities → DTOs inside the transaction
-  - Controllers work only with DTOs
+## Important Implementation Notes
 
----
+- Employee reads use `JOIN FETCH` to load addresses and departments eagerly for API responses.
+- `spring.jpa.open-in-view=false` is enabled, so entity-to-DTO mapping happens before the web layer accesses the data.
+- Updating an employee replaces the current address collection with the submitted list.
+- Employee create/update resolves `departmentId` against the database and rejects invalid references.
+- Deleting a department is blocked when employees are still assigned to it.
+- `GET /api/departments/{id}/employees` currently filters employees in memory using `EmployeeUseCase.findAll()`.
+- Department entities no longer eagerly load their employee collection for normal department reads.
 
-## 🎯 Benefits
-- Clear separation of concerns
-- Domain logic independent from frameworks
-- Easier unit testing
-- Flexible replacement of external systems
-- Clean DTO ↔ Entity mapping
+## Development Notes
 
----
+Areas that would be good next improvements:
 
-## 🚀 Extending This Project
-- Add more APIs (update, delete, search, etc.)
-- Add validation, error handling, authentication
-- Use a persistent DB (e.g., PostgreSQL)
-- Add integration tests
+- add unit and integration tests
+- add explicit API error examples
+- move department employee lookup to a repository query
+- tighten DTO validation for nested addresses
+- consider persistent storage such as PostgreSQL
 
----
+## Documentation Files
+
+- [README.md](/C:/Users/sahil/Downloads/HexagonalEmpCRUD/HexagonalEmpCRUD/README.md): project overview and setup
+- [docs/API.md](/C:/Users/sahil/Downloads/HexagonalEmpCRUD/HexagonalEmpCRUD/docs/API.md): endpoint reference and example requests
