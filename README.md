@@ -263,3 +263,4 @@ Areas that would be good next improvements:
 
 - [README.md](/C:/Users/sahil/Downloads/HexagonalEmpCRUD/HexagonalEmpCRUD/README.md): project overview and setup
 - [docs/API.md](/C:/Users/sahil/Downloads/HexagonalEmpCRUD/HexagonalEmpCRUD/docs/API.md): endpoint reference and example requests
+- [docs/HEXAGONAL-ARCHITECTURE.md](/C:/Users/sahil/Downloads/HexagonalEmpCRUD/HexagonalEmpCRUD/docs/HEXAGONAL-ARCHITECTURE.md): how hexagonal architecture is applied in this codebase
